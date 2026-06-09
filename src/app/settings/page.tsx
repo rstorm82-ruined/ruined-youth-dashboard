@@ -33,6 +33,8 @@ export default function SettingsPage() {
   const [loadingZernio, setLoadingZernio] = useState(false);
   const [importing, setImporting] = useState<string | null>(null);
   const [newGroup, setNewGroup] = useState({ name: "", description: "" });
+  const [newGroupProfiles, setNewGroupProfiles] = useState<number[]>([]);
+  const [editingGroup, setEditingGroup] = useState<number | null>(null);
   const [tab, setTab] = useState<"import" | "profiles" | "groups">("import");
 
   async function load() {
@@ -103,13 +105,32 @@ export default function SettingsPage() {
 
   async function createGroup() {
     if (!newGroup.name) return toast.error("Group name required");
-    await fetch("/api/profiles/groups", {
+    const res = await fetch("/api/profiles/groups", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newGroup),
     });
+    const group = await res.json();
+    // Assign selected profiles to the new group
+    for (const profileId of newGroupProfiles) {
+      await fetch(`/api/profiles/${profileId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupId: group.id }),
+      });
+    }
     toast.success("Group created");
     setNewGroup({ name: "", description: "" });
+    setNewGroupProfiles([]);
+    load();
+  }
+
+  async function updateGroupProfiles(groupId: number, profileId: number, add: boolean) {
+    await fetch(`/api/profiles/${profileId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupId: add ? groupId : null }),
+    });
     load();
   }
 
@@ -272,34 +293,106 @@ export default function SettingsPage() {
             <h2 className="text-sm font-semibold mb-4 uppercase tracking-wide" style={{ color: "var(--muted)" }}>
               Create Group
             </h2>
-            <div className="space-y-3 mb-3">
-              <input style={inputStyle} placeholder="Group name (e.g. Ruined Youth)"
+            <div className="space-y-3 mb-4">
+              <input style={inputStyle} placeholder="Group name (e.g. Crypto Twitter)"
                 value={newGroup.name} onChange={(e) => setNewGroup((p) => ({ ...p, name: e.target.value }))} />
               <input style={inputStyle} placeholder="Description (optional)"
                 value={newGroup.description}
                 onChange={(e) => setNewGroup((p) => ({ ...p, description: e.target.value }))} />
             </div>
+
+            {profiles.length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs uppercase tracking-wide mb-2" style={{ color: "var(--muted)" }}>
+                  Add profiles to this group
+                </p>
+                <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                  {profiles.map((p) => (
+                    <label key={p.id} className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer hover:opacity-80"
+                      style={{ background: "var(--border)" }}>
+                      <input
+                        type="checkbox"
+                        checked={newGroupProfiles.includes(p.id)}
+                        onChange={(e) =>
+                          setNewGroupProfiles((prev) =>
+                            e.target.checked ? [...prev, p.id] : prev.filter((id) => id !== p.id)
+                          )
+                        }
+                        className="accent-[var(--accent)]"
+                      />
+                      {p.avatarUrl && <img src={p.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover flex-shrink-0" />}
+                      <span className="text-sm flex-1">{p.name}</span>
+                      <span className="text-xs capitalize" style={{ color: "var(--muted)" }}>{p.platform}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <button onClick={createGroup} className="btn-primary flex items-center gap-2 text-sm">
               <Plus size={14} /> Create Group
+              {newGroupProfiles.length > 0 && ` (${newGroupProfiles.length} profiles)`}
             </button>
           </div>
 
           <div className="surface">
-            {groups.map((g, i) => (
-              <div key={g.id} className="flex items-center gap-3 px-4 py-3"
-                style={{ borderBottom: i < groups.length - 1 ? "1px solid var(--border)" : "none" }}>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{g.name}</p>
-                  <p className="text-xs" style={{ color: "var(--muted)" }}>
-                    {profiles.filter((p) => p.groupId === g.id).length} profiles
-                    {g.description && ` · ${g.description}`}
-                  </p>
+            {groups.map((g, i) => {
+              const groupProfiles = profiles.filter((p) => p.groupId === g.id);
+              const isEditing = editingGroup === g.id;
+              return (
+              <div key={g.id} style={{ borderBottom: i < groups.length - 1 ? "1px solid var(--border)" : "none" }}>
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{g.name}</p>
+                    <p className="text-xs" style={{ color: "var(--muted)" }}>
+                      {groupProfiles.length} profiles{g.description && ` · ${g.description}`}
+                    </p>
+                    {groupProfiles.length > 0 && !isEditing && (
+                      <div className="flex gap-1 mt-1.5 flex-wrap">
+                        {groupProfiles.map((p) => (
+                          <span key={p.id} className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded"
+                            style={{ background: "var(--border)", color: "var(--muted)" }}>
+                            {p.avatarUrl && <img src={p.avatarUrl} alt="" className="w-3 h-3 rounded-full object-cover" />}
+                            {p.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={() => setEditingGroup(isEditing ? null : g.id)}
+                    className="text-xs px-2 py-1 rounded hover:opacity-70"
+                    style={{ background: "var(--border)", color: isEditing ? "var(--accent)" : "var(--muted)" }}>
+                    {isEditing ? "Done" : "Edit"}
+                  </button>
+                  <button onClick={() => deleteGroup(g.id)} className="hover:opacity-70">
+                    <Trash2 size={14} style={{ color: "var(--muted)" }} />
+                  </button>
                 </div>
-                <button onClick={() => deleteGroup(g.id)} className="hover:opacity-70">
-                  <Trash2 size={14} style={{ color: "var(--muted)" }} />
-                </button>
+
+                {isEditing && (
+                  <div className="px-4 pb-4 grid grid-cols-1 gap-1.5">
+                    <p className="text-xs uppercase tracking-wide mb-1" style={{ color: "var(--muted)" }}>
+                      Toggle profiles in this group
+                    </p>
+                    {profiles.map((p) => (
+                      <label key={p.id} className="flex items-center gap-3 px-3 py-2 rounded cursor-pointer hover:opacity-80"
+                        style={{ background: "var(--border)" }}>
+                        <input
+                          type="checkbox"
+                          checked={p.groupId === g.id}
+                          onChange={(e) => updateGroupProfiles(g.id, p.id, e.target.checked)}
+                          className="accent-[var(--accent)]"
+                        />
+                        {p.avatarUrl && <img src={p.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover flex-shrink-0" />}
+                        <span className="text-sm flex-1">{p.name}</span>
+                        <span className="text-xs capitalize" style={{ color: "var(--muted)" }}>{p.platform}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
-            ))}
+              );
+            })}
             {groups.length === 0 && (
               <p className="p-4 text-sm" style={{ color: "var(--muted)" }}>No groups yet.</p>
             )}
