@@ -10,6 +10,17 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
   return NextResponse.json(profile);
 }
 
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const body = await req.json();
+  const [profile] = await db
+    .update(profiles)
+    .set({ groupId: body.groupId ?? null })
+    .where(eq(profiles.id, parseInt(id)))
+    .returning();
+  return NextResponse.json(profile);
+}
+
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await db.delete(profiles).where(eq(profiles.id, parseInt(id)));
