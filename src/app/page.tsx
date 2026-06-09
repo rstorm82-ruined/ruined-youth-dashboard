@@ -5,6 +5,8 @@ import { formatNumber } from "@/lib/utils";
 import Link from "next/link";
 import { Clock, Users, MessageSquare, TrendingUp } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 async function getStats() {
   try {
     const [profileCount] = await db.select({ count: count() }).from(profiles);
@@ -36,7 +38,8 @@ async function getStats() {
       unreadDMs: unreadDMs.count,
       todayPosts,
     };
-  } catch {
+  } catch (e) {
+    console.error("Dashboard stats error:", e);
     return {
       profileCount: 0,
       scheduledCount: 0,
