@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git)",
+      "PowerShell(Get-Command node, npm, npx -ErrorAction SilentlyContinue | Select-Object Name, Source; $env:PATH -split \";\" | Where-Object { $_ -match \"node\" })",
+      "PowerShell(Get-ChildItem \"C:\\\\Program Files\\\\nodejs\" -ErrorAction SilentlyContinue; Get-ChildItem \"$env:APPDATA\\\\npm\" -ErrorAction SilentlyContinue | Select-Object -First 5; Test-Path \"C:\\\\Program Files\\\\nodejs\\\\node.exe\")",
+      "PowerShell(winget install Railway.RailwayCLI 2>&1)",
+      "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"User\"\\); node --version; npm --version)"
+    ]
+  }
+}
