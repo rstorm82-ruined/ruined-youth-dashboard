@@ -16,6 +16,7 @@ import {
   Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import WorldClock from "./WorldClock";
 
 const nav = [
   { href: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -60,7 +61,8 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="px-5 py-4 border-t text-xs text-[var(--muted)]" style={{ borderColor: "var(--border)" }}>
+      <WorldClock />
+      <div className="px-5 py-3 text-xs text-[var(--muted)]">
         HQ Dashboard
       </div>
     </aside>
