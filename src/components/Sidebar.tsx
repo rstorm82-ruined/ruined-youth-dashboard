@@ -13,6 +13,7 @@ import {
   FileText,
   Settings,
   Zap,
+  Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,7 @@ const nav = [
   { href: "/queue", icon: Clock, label: "Queue" },
   { href: "/inbox", icon: Inbox, label: "Inbox" },
   { href: "/analytics", icon: BarChart2, label: "Analytics" },
+  { href: "/best-times", icon: Flame, label: "Best Times" },
   { href: "/templates", icon: FileText, label: "Templates" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
